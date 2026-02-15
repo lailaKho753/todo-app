@@ -7,8 +7,9 @@ import (
 
 func main() {
 	store := NewInMemoryStore()
+	mux := http.NewServeMux()
 
-	http.HandleFunc("/todos", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/todos", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			createTodoHandler(store)(w, r)
@@ -19,7 +20,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/todos/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/todos/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			getTodoByIDHandler(store)(w, r)
@@ -32,6 +33,15 @@ func main() {
 		}
 	})
 
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{
+			"status": "ok",
+		})
+	})
+	
+	loggedMux := loggingMiddleware(mux)
+
 	log.Println("Server running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", loggedMux))
+
 }
